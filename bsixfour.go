@@ -5,29 +5,40 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 )
 
 const sextetBitMask byte = 1<<6 - 1 // 0b00111111
 
 func main() {
 	// TODO add ability to either encode or decode from command line
-	// base64Output := Encode(os.Stdin)
-	// fmt.Println(base64Output)
-	originalData := Decode(os.Stdin)
-	fmt.Print(originalData)
+	// base64Channel := make(chan string)
+	// go Encode(os.Stdin, base64Channel)
+	// for {
+	// 	val, isOpen := <-base64Channel
+	// 	if !isOpen {
+	// 		break
+	// 	}
+	// 	fmt.Print(val)
+	// }
+
+	originalDataChannel := make(chan []byte)
+	go Decode(os.Stdin, originalDataChannel)
+	for {
+		val, isOpen := <-originalDataChannel
+		if !isOpen {
+			break
+		}
+		fmt.Print(string(val))
+	}
+
 	// printing final newline using stderr
 	// so it doesn't corrupt output when piped to other applications.
-	// Eventually might include a flag to make this behaivor optional
+	// Eventually might include a flag to make this behavior optional
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
-func Encode(reader io.Reader) string {
-	// note that this is currently not a great implementation
-	// because it stores the entire contents of the base64 string in memory
-	// I will improve with goroutines/channels at a future date.
+func Encode(reader io.Reader, base64Channel chan<- string) {
 	lookupTable := buildBase64EncoderLookupTable()
-	stringBuilder := new(strings.Builder)
 
 	for {
 		// inBuf needs to be declared in the loop to get zeroed out
@@ -48,7 +59,8 @@ func Encode(reader io.Reader) string {
 		var threeByteChunk uint32 = uint32(inBuf[0])<<16 | uint32(inBuf[1])<<8 | uint32(inBuf[2])
 		var outBuf [4]rune
 		for n := 0; n < len(outBuf); n++ {
-			// starting with most-significant/leftmost sextet, use bitmask to extract sextets & lookup table to get ascii character
+			// starting with most-significant/leftmost sextet,
+			// use bitmask to extract sextets & lookup table to get ascii character
 			outBuf[n] = lookupTable[byte(threeByteChunk>>(18-n*6))&sextetBitMask]
 		}
 
@@ -58,10 +70,9 @@ func Encode(reader io.Reader) string {
 		}
 
 		// regardless of input length, output will always have a length of a multiple of 4
-		stringBuilder.WriteString(string(outBuf[:]))
+		base64Channel <- string(outBuf[:])
 	}
-
-	return stringBuilder.String()
+	close(base64Channel)
 }
 
 func buildBase64EncoderLookupTable() map[byte]rune {
@@ -83,9 +94,8 @@ func buildBase64EncoderLookupTable() map[byte]rune {
 	return lookupTable
 }
 
-func Decode(reader io.Reader) string {
+func Decode(reader io.Reader, dataChannel chan<- []byte) {
 	decodeLookupTable := buildBase64DecoderLookupTable()
-	stringBuilder := new(strings.Builder)
 
 	for {
 		var inBuf [4]byte
@@ -117,9 +127,9 @@ func Decode(reader io.Reader) string {
 			fourCharacterChunk = fourCharacterChunk | uint32(decodeLookupTable[rune(inBuf[n])])<<(6*(3-n))
 		}
 		outBuf := [3]byte{byte(fourCharacterChunk >> 16), byte(fourCharacterChunk >> 8), byte(fourCharacterChunk)}
-		stringBuilder.WriteString(string(outBuf[0:numUsedBytes]))
+		dataChannel <- outBuf[0:numUsedBytes]
 	}
-	return stringBuilder.String()
+	close(dataChannel)
 }
 
 func buildBase64DecoderLookupTable() map[rune]byte {
