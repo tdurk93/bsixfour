@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 const sextetBitMask byte = 1<<6 - 1 // 0b00111111
@@ -12,7 +13,7 @@ const sextetBitMask byte = 1<<6 - 1 // 0b00111111
 func main() {
 	// TODO add ability to either encode or decode from command line
 	// base64Channel := make(chan string)
-	// go Encode(os.Stdin, base64Channel)
+	// go encode(os.Stdin, base64Channel)
 	// for {
 	// 	val, isOpen := <-base64Channel
 	// 	if !isOpen {
@@ -22,7 +23,7 @@ func main() {
 	// }
 
 	originalDataChannel := make(chan []byte)
-	go Decode(os.Stdin, originalDataChannel)
+	go decode(os.Stdin, originalDataChannel)
 	for {
 		val, isOpen := <-originalDataChannel
 		if !isOpen {
@@ -37,7 +38,7 @@ func main() {
 	fmt.Fprintf(os.Stderr, "\n")
 }
 
-func Encode(reader io.Reader, base64Channel chan<- string) {
+func encode(reader io.Reader, base64Channel chan<- string) {
 	lookupTable := buildBase64EncoderLookupTable()
 
 	for {
@@ -75,6 +76,20 @@ func Encode(reader io.Reader, base64Channel chan<- string) {
 	close(base64Channel)
 }
 
+func Encode(reader io.Reader) string {
+	stringBuilder := new(strings.Builder)
+	base64DataChannel := make(chan string)
+	go encode(reader, base64DataChannel)
+	for {
+		val, isOpen := <-base64DataChannel
+		if !isOpen {
+			break
+		}
+		stringBuilder.Write([]byte(val))
+	}
+	return stringBuilder.String()
+}
+
 func buildBase64EncoderLookupTable() map[byte]rune {
 	const capitalAOffset = 65
 	const lowercaseAOffset = capitalAOffset | 1<<5 // (97)
@@ -94,7 +109,7 @@ func buildBase64EncoderLookupTable() map[byte]rune {
 	return lookupTable
 }
 
-func Decode(reader io.Reader, dataChannel chan<- []byte) {
+func decode(reader io.Reader, dataChannel chan<- []byte) {
 	decodeLookupTable := buildBase64DecoderLookupTable()
 
 	for {
@@ -130,6 +145,20 @@ func Decode(reader io.Reader, dataChannel chan<- []byte) {
 		dataChannel <- outBuf[0:numUsedBytes]
 	}
 	close(dataChannel)
+}
+
+func Decode(reader io.Reader) string {
+	stringBuilder := new(strings.Builder)
+	originalDataChannel := make(chan []byte)
+	go decode(reader, originalDataChannel)
+	for {
+		val, isOpen := <-originalDataChannel
+		if !isOpen {
+			break
+		}
+		stringBuilder.Write(val)
+	}
+	return stringBuilder.String()
 }
 
 func buildBase64DecoderLookupTable() map[rune]byte {
