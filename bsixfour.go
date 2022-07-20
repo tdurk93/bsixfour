@@ -147,8 +147,8 @@ func decode(reader io.Reader, dataChannel chan<- []byte) {
 	close(dataChannel)
 }
 
-func Decode(reader io.Reader) string {
-	stringBuilder := new(strings.Builder)
+func Decode(reader io.Reader) []byte {
+	data := make([]byte, 200) // arbitrarily choosing an initial capacity of 200
 	originalDataChannel := make(chan []byte)
 	go decode(reader, originalDataChannel)
 	for {
@@ -156,9 +156,9 @@ func Decode(reader io.Reader) string {
 		if !isOpen {
 			break
 		}
-		stringBuilder.Write(val)
+		data = append(data, val...)
 	}
-	return stringBuilder.String()
+	return data
 }
 
 func buildBase64DecoderLookupTable() map[rune]byte {
