@@ -11,11 +11,8 @@ func main() {
 	appendNewline := true
 	const appendNewlineHelpMessage = "By default this tool appends a final newline character. Set to false to disable this behavior."
 
-	encodeFlagSet := flag.NewFlagSet("encode", flag.ExitOnError)
-	encodeFlagSet.BoolVar(&appendNewline, "append-newline", true, appendNewlineHelpMessage)
-
-	decodeFlagSet := flag.NewFlagSet("decode", flag.ExitOnError)
-	decodeFlagSet.BoolVar(&appendNewline, "append-newline", true, appendNewlineHelpMessage)
+	flagSet := flag.NewFlagSet("encode", flag.ExitOnError)
+	flagSet.BoolVar(&appendNewline, "append-newline", true, appendNewlineHelpMessage)
 
 	// default Usage message didn't seem to work with my subcommands,
 	// so I'm just setting it manually
@@ -30,9 +27,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	flagSet.Parse(os.Args[2:])
+
 	switch os.Args[1] {
 	case "encode":
-		encodeFlagSet.Parse(os.Args[2:])
 		base64Channel := make(chan string)
 		go encode(os.Stdin, base64Channel)
 		for {
@@ -43,7 +41,6 @@ func main() {
 			fmt.Print(val)
 		}
 	case "decode":
-		decodeFlagSet.Parse(os.Args[2:])
 		originalDataChannel := make(chan []byte)
 		go decode(os.Stdin, originalDataChannel)
 		for {
