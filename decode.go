@@ -12,13 +12,14 @@ func decode(reader io.Reader, dataChannel chan<- []byte) {
 		var inBuf [4]byte
 		numBytes, err := reader.Read(inBuf[:]) // read in 4 characters/bytes at a time
 
+		if numBytes%len(inBuf) != 0 {
+			// Input length was not a multiple of 4.
+			// This tool only supports base64 with padding.
+			panic("Input length not valid")
+		}
+
 		if err != nil {
 			if errors.Is(err, io.EOF) {
-				if numBytes != 0 {
-					// Input length was not a multiple of 4.
-					// This tool only supports base64 with padding.
-					panic("Input length not valid")
-				}
 				break
 			} else { // unexpected
 				panic(err)
