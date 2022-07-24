@@ -8,7 +8,7 @@ When used from the command line, it reads input from stdin and prints to stdout.
 ```bash
 $ go build
 
-$ echo -n 'hello, world!' | go ./bsixfour encode
+$ echo -n 'hello, world!' | ./bsixfour encode
 aGVsbG8sIHdvcmxkIQ==
 
 # or skip the build step
