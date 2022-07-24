@@ -27,7 +27,7 @@ func encode(reader io.Reader, base64Channel chan<- string) {
 		// construct 24-bit chunk that we can dice into 4 sextets
 		var threeByteChunk uint32 = uint32(inBuf[0])<<16 | uint32(inBuf[1])<<8 | uint32(inBuf[2])
 		var outBuf [4]rune
-		for n := 0; n < len(outBuf); n++ {
+		for n := range outBuf {
 			// starting with most-significant/leftmost sextet,
 			// use bitmask to extract sextets & lookup table to get ascii character
 			outBuf[n] = lookupTable[byte(threeByteChunk>>(18-n*6))&sextetBitMask]

@@ -52,11 +52,11 @@ func TestDecodeWithNilByte(t *testing.T) {
 
 func TestDecodeWithEveryByteValue(t *testing.T) {
 	const inputLength = 256
-	base64Input := make([]byte, inputLength)
-	for n := 0; n < inputLength; n++ {
-		base64Input[n] = byte(n)
+	decodedData := make([]byte, inputLength)
+	for n := range decodedData {
+		decodedData[n] = byte(n)
 	}
-	checkDecodeAgainstStandardLib(t, base64Input)
+	checkDecodeAgainstStandardLib(t, decodedData)
 }
 
 func BenchmarkDecodeWithSmallInput(b *testing.B) {
@@ -64,7 +64,7 @@ func BenchmarkDecodeWithSmallInput(b *testing.B) {
 	decodedData := make([]byte, inputLength)
 	randomOffset := byte(rand.Uint32())
 
-	for n := 0; n < inputLength; n++ {
+	for n := range decodedData {
 		decodedData[n] = (byte(n) + randomOffset) % byte(inputLength-1)
 	}
 	base64String := base64.StdEncoding.EncodeToString(decodedData)

@@ -28,10 +28,10 @@ func decode(reader io.Reader, dataChannel chan<- []byte) {
 		numUsedBytes := 3
 		// construct 24-bit chunk that we can break into 3 bytes
 		var fourCharacterChunk uint32 = 0
-		for n := 0; n < len(inBuf); n++ {
+		for n, base64Char := range inBuf {
 			// first perform padding check so we can avoid using the lookup table
 			// on padding characters where there isn't technically an output mapping
-			if n >= 2 && rune(inBuf[n]) == '=' { // only check 3rd & 4th characters for padding
+			if n >= 2 && rune(base64Char) == '=' { // only check 3rd & 4th characters for padding
 				numUsedBytes = n - 1
 				break
 			}

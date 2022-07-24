@@ -50,7 +50,7 @@ func TestEncodeWithNilByte(t *testing.T) {
 func TestEncodeWithEveryByteValue(t *testing.T) {
 	const inputLength = 256
 	base64Input := make([]byte, inputLength)
-	for n := 0; n < inputLength; n++ {
+	for n := range base64Input {
 		base64Input[n] = byte(n)
 	}
 	checkEncodeAgainstStandardLib(t, base64Input)
@@ -61,7 +61,7 @@ func BenchmarkEncodeWithSmallInput(b *testing.B) {
 	base64Input := make([]byte, inputLength)
 	randomOffset := byte(rand.Uint32())
 
-	for n := 0; n < inputLength; n++ {
+	for n := range base64Input {
 		base64Input[n] = (byte(n) + randomOffset) % byte(inputLength-1)
 	}
 
@@ -83,7 +83,7 @@ func createLargeSampleDataSlice() []byte {
 	}
 	randomOffset := rand.Int()
 
-	for n := 0; n < largeSampleDataSize; n++ {
+	for n := range largeSampleData {
 		largeSampleData[n] = byte(n + randomOffset)
 	}
 	return largeSampleData
