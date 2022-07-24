@@ -59,23 +59,34 @@ func TestDecodeWithEveryByteValue(t *testing.T) {
 	checkDecodeAgainstStandardLib(t, decodedData)
 }
 
-func BenchmarkDecodeWithSmallInput(b *testing.B) {
-	const inputLength = 256
-	decodedData := make([]byte, inputLength)
+func createBase64StringOfSmallInput() string {
+	const decodedDataLength = 256
+	decodedData := make([]byte, decodedDataLength)
 	randomOffset := byte(rand.Uint32())
 
 	for n := range decodedData {
-		decodedData[n] = (byte(n) + randomOffset) % byte(inputLength-1)
+		decodedData[n] = (byte(n) + randomOffset) % byte(decodedDataLength-1)
 	}
-	base64String := base64.StdEncoding.EncodeToString(decodedData)
+	return base64.StdEncoding.EncodeToString(decodedData)
+}
 
+func BenchmarkDecodeSmallInput(b *testing.B) {
+	base64String := createBase64StringOfSmallInput()
 	reader := new(strings.Reader)
-
 	b.ResetTimer()
-
 	for n := 0; n < b.N; n++ {
 		reader.Reset(base64String)
 		Decode(reader)
+	}
+}
+
+func BenchmarkDecodeSmallInputWithStandardLib(b *testing.B) {
+	base64String := createBase64StringOfSmallInput()
+	unusedReader := new(strings.Reader)
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		unusedReader.Reset(base64String) // included for fair comparison with my Decode()
+		base64.StdEncoding.DecodeString(base64String)
 	}
 }
 
@@ -120,7 +131,7 @@ func createBase64StringOfLargeInput() string {
 	return largeBase64String
 }
 
-func BenchmarkDecodeWithLargeInput(b *testing.B) {
+func BenchmarkDecodeLargeInput(b *testing.B) {
 	base64String := []byte(createBase64StringOfLargeInput())
 
 	reader := new(bytes.Reader)
@@ -133,7 +144,7 @@ func BenchmarkDecodeWithLargeInput(b *testing.B) {
 	}
 }
 
-func BenchmarkStandardLibraryDecodeWithLargeInput(b *testing.B) {
+func BenchmarkDecodeLargeInputWithStandardLib(b *testing.B) {
 	base64String := createBase64StringOfLargeInput()
 
 	reader := new(strings.Reader)

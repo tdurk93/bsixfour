@@ -56,7 +56,7 @@ func TestEncodeWithEveryByteValue(t *testing.T) {
 	checkEncodeAgainstStandardLib(t, base64Input)
 }
 
-func BenchmarkEncodeWithSmallInput(b *testing.B) {
+func createSmallSampleDataSlice() *[]byte {
 	const inputLength = 256
 	base64Input := make([]byte, inputLength)
 	randomOffset := byte(rand.Uint32())
@@ -64,33 +64,45 @@ func BenchmarkEncodeWithSmallInput(b *testing.B) {
 	for n := range base64Input {
 		base64Input[n] = (byte(n) + randomOffset) % byte(inputLength-1)
 	}
+	return &base64Input
+}
 
+func BenchmarkEncodeSmallInput(b *testing.B) {
+	base64Input := *createSmallSampleDataSlice()
 	reader := new(bytes.Reader)
-
 	b.ResetTimer()
-
 	for n := 0; n < b.N; n++ {
 		reader.Reset(base64Input)
 		Encode(reader)
 	}
 }
 
-func createLargeSampleDataSlice() []byte {
+func BenchmarkEncodeSmallInputWithStandardLib(b *testing.B) {
+	base64Input := *createSmallSampleDataSlice()
+	unusedReader := new(bytes.Reader)
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		unusedReader.Reset(base64Input) // included for fair comparison with my Encode()
+		Encode(unusedReader)
+	}
+}
+
+func createLargeSampleDataSlice() *[]byte {
 	// it's possible that largeSampleData[0] == 0 even after populating (based on the value of randomOffset),
 	// but comparing largeSampleData[0] to largeSampleData[1] will correctly determine if the slice is populated
 	if largeSampleData[0] != largeSampleData[1] {
-		return largeSampleData
+		return &largeSampleData
 	}
 	randomOffset := rand.Int()
 
 	for n := range largeSampleData {
 		largeSampleData[n] = byte(n + randomOffset)
 	}
-	return largeSampleData
+	return &largeSampleData
 }
 
-func BenchmarkEncodeWithLargeInput(b *testing.B) {
-	base64Input := createLargeSampleDataSlice()
+func BenchmarkEncodeLargeInput(b *testing.B) {
+	base64Input := *createLargeSampleDataSlice()
 
 	reader := new(bytes.Reader)
 
@@ -99,5 +111,14 @@ func BenchmarkEncodeWithLargeInput(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		reader.Reset(base64Input)
 		Encode(reader)
+	}
+}
+
+func BenchmarkEncodeLargeInputWithStandardLib(b *testing.B) {
+	base64Input := *createLargeSampleDataSlice()
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		base64.StdEncoding.EncodeToString(base64Input)
 	}
 }
